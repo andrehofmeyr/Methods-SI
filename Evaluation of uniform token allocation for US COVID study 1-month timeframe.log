@@ -1,0 +1,3984 @@
+----------------------------------------------------------------------------------------------------------------------------------------
+      name:  main
+       log:  /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Evaluation of uniform token allocation for US COVID study 1-month timefra
+> me.log
+  log type:  text
+ opened on:  27 Apr 2021, 12:40:54
+
+. 
+. * Specify version
+. version 15
+
+. capture: version 16.1
+
+. set more off
+
+. 
+. * Start timer
+. capture: timer clear
+
+. timer on 1
+
+. 
+. * Allow big machines to process (needs capture so SE can run; comment out if you want to avoid too many processors)
+. capture: set processors 2
+
+. capture: set processors 4
+
+. capture: set processors 32
+
+. 
+. * Need to ensure replications across computers with multiple processors
+. set seed 1234
+
+. 
+. * Graphics font
+. graph set window fontface "Candara"
+
+. 
+. * Graphics scheme
+. global scheme "s1color"
+
+. set scheme $scheme
+
+. 
+. * Document what ran
+. about
+
+Stata/MP 16.1 for Mac (Intel 64-bit)
+Revision 06 Apr 2021
+Copyright 1985-2019 StataCorp LLC
+
+Total physical memory: 8.01 GB
+
+Stata license: Single-user 4-core  perpetual
+Serial number: 501606322769
+  Licensed to: Andre Hofmeyr
+               University of Cape Town
+
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   1.  Prepare the data   <] */ 
+. /*----------------------------------------------------*/
+. unzipfile "ExpData.zip", replace
+    inflating: ExpData.dta
+
+successfully unzipped ExpData.zip to current directory
+total processed:  1
+        skipped:  0
+      extracted:  1
+
+. use ExpData.dta, clear
+
+.  
+. /*----------------------------------------------------*/
+.    /* [>   2.  Set globals for figures and analyses   <] */ 
+. /*----------------------------------------------------*/
+. 
+. * global for figures
+. global doFIGURES        "y"
+
+. 
+. * global for analyses
+. global doANALYSES       "y"
+
+. 
+. /* [> Decide which frames to analyse -- If you set 
+>         $doALLframes to "y" then it ignores other globals<] */ 
+. 
+. * global to only do IHME analyses
+. global doIHME "n"
+
+. 
+. * global to only do non-IHME analyses
+. global doNON_IHME "n"
+
+. 
+. * global to only do frames 2 and 3 analyses
+. global doFRAMES23 "n"
+
+. 
+. * global to do analyses for all frames
+. global doALLframes "y"
+
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   3.  Figures and Analyses   <] */ 
+. /*----------------------------------------------------*/
+. 
+. * Plot the figures
+. if "$doFIGURES" == "y" {
+.         do Figures.do
+
+. /**********************************************************************/
+. /*  SECTION 1: Figures                          
+>     This DO file produces all of the figures for the Methods journal
+>     submission */
+. /**********************************************************************/
+. 
+. * Load up the data and change into /Figures/
+. cd Figures
+/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures
+
+. 
+. * Graphics scheme
+. global scheme "s1color"
+
+. set scheme $scheme
+
+. 
+. *Get the number of waves
+. summ wave
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        wave |     22,740    2.992084    1.492591          1          6
+
+. local Nwaves = r(max)
+
+. 
+. *Setup for processing of waves -- default is the latest wave
+. local wave_first = `Nwaves'
+
+. local wave_last = `Nwaves'
+
+. di "There have been `wave_last' waves"
+There have been 6 waves
+
+. 
+. global doWAVE "0"
+
+. 
+. if "$doWAVE" == "0" {
+.         local wave_first = 1
+.         local wave_last = `Nwaves'
+. }
+
+. forvalues w=1/6 {
+  2.         if "$doWAVE" == "`w'" {
+  3.                 local wave_first = `w'
+  4.                 local wave_last = `w'
+  5.         }
+  6. }
+
+. 
+. *Close putpdf in case it is "open"
+. capture putpdf clear    
+
+. 
+. *Set up locals to capture the report dates, horizons, correct answers, correct answers by frame, etc.
+. local reports "May 29, June 30, July 31, August 31, September 29 and October 29, 2020"
+
+. local short_horizon = "June 30, July 31, August 30, September 30, October 30 and December 1 2020"
+
+. local short_horizon_ = "June 30, July 30, August 30, September 30, October 30 and December 1"
+
+. 
+. local reports1 = "May 29, 2020"
+
+. local short_horizon1 = "June 30, 2020"
+
+. local short_horizon1_ = "June 30"
+
+. 
+. local reports2 = "June 30, 2020"
+
+. local short_horizon2 = "July 30, 2020"
+
+. local short_horizon2_ = "July 30"
+
+. 
+. local reports3 = "July 31, 2020"
+
+. local short_horizon3 = "August 30, 2020"
+
+. local short_horizon3_ = "August 30"
+
+. 
+. local reports4 = "August 31, 2020"
+
+. local short_horizon4 = "September 30, 2020"
+
+. local short_horizon4_ = "September 30"
+
+. 
+. local reports5 = "September 29, 2020"
+
+. local short_horizon5 = "October 30, 2020"
+
+. local short_horizon5_ = "October 30"
+
+. 
+. local reports6 = "October 29, 2020"
+
+. local short_horizon6 = "December 1, 2020"
+
+. local short_horizon6_ = "December 1"
+
+. 
+. 
+. *Correct answers by wave
+. local answerq1w1 "2,624,873 cases"
+
+. local answerq3w1 "127,299 deaths"
+
+. local answerq1w2 "4,473,974 cases"
+
+. local answerq3w2 "151,499 deaths"
+
+. local answerq1w3 "5,972,356 cases"
+
+. local answerq3w3 "182,622 deaths"
+
+. local answerq1w4 "7,213,419 cases"
+
+. local answerq3w4 "206,402 deaths"
+
+. 
+. *These need updating
+. local answerq1w5 "9,024,298 cases"
+
+. local answerq3w5 "229,109 deaths"
+
+. local answerq5w6 "13,626,022 cases"
+
+. local answerq7w6 "269,763 deaths"
+
+. 
+. 
+. *Correct answers x coordinates by question, frame, and wave - Only one-month horizon Qs
+. *Infections
+. *Wave 1, Q1
+. local answercoordf0q1w1 "10.1"
+
+. local answercoordf1q1w1 "10.1"
+
+. local answercoordf2q1w1 "5.9"
+
+. local answercoordf3q1w1 "3.8"
+
+. 
+. *Wave 2, Q1
+. local answercoordf0q1w2 "10.35"
+
+. local answercoordf1q1w2 "10.4"
+
+. local answercoordf2q1w2 "10.2"
+
+. local answercoordf3q1w2 "10.1"
+
+. 
+. *Wave 3, Q1
+. local answercoordf0q1w3 "1.45"
+
+. local answercoordf1q1w3 "2.95"
+
+. local answercoordf2q1w3 "1.35"
+
+. local answercoordf3q1w3 "1.25"
+
+. 
+. *Wave 4, Q1
+. local answercoordf0q1w4 "10.1"
+
+. local answercoordf1q1w4 "10.2"
+
+. local answercoordf2q1w4 "3.9"
+
+. local answercoordf3q1w4 "2.1"
+
+. 
+. *Wave 5, Q1
+. local answercoordf0q1w5 "7.2"
+
+. local answercoordf1q1w5 "10.05"
+
+. local answercoordf2q1w5 "4.9"
+
+. local answercoordf3q1w5 "2.2"
+
+. 
+. *Wave 6, Q5
+. local answercoordf0q5w6 "10.4"
+
+. local answercoordf1q5w6 "10.4"
+
+. local answercoordf2q5w6 "10.3"
+
+. local answercoordf3q5w6 "10.25"
+
+. 
+. 
+. *Deaths
+. *Wave 1, Q3
+. local answercoordf0q3w1 "3.7"
+
+. local answercoordf1q3w1 "4.05"
+
+. local answercoordf2q3w1 "3.1"
+
+. local answercoordf3q3w1 "2.95"
+
+. 
+. *Wave 2, Q3
+. local answercoordf0q3w2 "3.05"
+
+. local answercoordf1q3w2 "5.95"
+
+. local answercoordf2q3w2 "2.1"
+
+. local answercoordf3q3w2 "1.9"
+
+. 
+. *Wave 3, Q3
+. local answercoordf0q3w3 "3.95"
+
+. local answercoordf1q3w3 "4.05"
+
+. local answercoordf2q3w3 "3.01"
+
+. local answercoordf3q3w3 "2.9"
+
+. 
+. *Wave 4, Q3
+. local answercoordf0q3w4 "2.05"
+
+. local answercoordf1q3w4 "3.95"
+
+. local answercoordf2q3w4 "1.9"
+
+. local answercoordf3q3w4 "1.7"
+
+. 
+. *Wave 5, Q3
+. local answercoordf0q3w5 "2.9"
+
+. local answercoordf1q3w5 "3.99"
+
+. local answercoordf2q3w5 "1.47"
+
+. local answercoordf3q3w5 "2.53"
+
+. 
+. *Wave 6, Q7
+. local answercoordf0q7w6 "8.03"
+
+. local answercoordf1q7w6 "10.2"
+
+. local answercoordf2q7w6 "3.95"
+
+. local answercoordf3q7w6 "2.95"
+
+. 
+. 
+. *Set up some graph properties
+. * bar color and box color
+. local barcolor "gs8"
+
+. local barcolor "blue"
+
+. local boxcolor "none"
+
+. 
+. * loop over questions and get histograms
+. forvalues wave = `wave_first'/`wave_last' {
+  2.         local questions "1 3" 
+  3.         local country = "USA"
+  4.         local country_full = "the United States"
+  5.         if ("`wave'" == "6") local questions "5 7"
+  6. 
+.         * start PDF
+.         putpdf begin
+  7. 
+.         foreach q of local questions {
+  8.                 if "`q'" == "1" {
+  9.                         local topic = "Infections by `short_horizon`wave''"
+ 10.                         local units "Millions of "
+ 11.                 }
+ 12.                 if "`q'" == "3" {
+ 13.                         local topic = "Deaths by `short_horizon`wave''"
+ 14.                         local units "Hundreds of Thousands of "
+ 15.                 }
+ 16.                 if "`q'" == "5" {
+ 17.                         local topic = "Infections by `short_horizon`wave''"
+ 18.                         local units "Millions of "
+ 19.                 }
+ 20.                 if "`q'" == "7" {
+ 21.                         local topic = "Deaths by `short_horizon`wave''"
+ 22.                         local units "Hundreds of Thousands of "
+ 23.                 }
+ 24. 
+.                 forvalues f=0/3 {
+ 25.                         * generate value labels on the fly-by..
+.                         forvalues b=1/10 {
+ 26.                                 if "`b'" == "10" {
+ 27.                                         qui: summ v_lo if question==`q' & frame==`f' & bbin==`b' & wave==`wave'
+ 28.                                 }
+ 29.                                 else {
+ 30.                                         qui: summ v_mid if question==`q' & frame==`f' & bbin==`b' & wave==`wave'
+ 31.                                 }
+ 32.                                 local v = r(mean)
+ 33.                                 if `v' < 1 {
+ 34.                                         local v`b'_ = string(`v', "%3.2f")
+ 35.                                 }
+ 36.                                 if `v' >= 1 & `v' < 100 {
+ 37.                                         local v`b'_ = string(`v', "%3.2f")
+ 38.                                 }
+ 39.                                 if `v' > 100 {
+ 40.                                         local v`b'_ = string(`v', "%4.0f")
+ 41.                                 }
+ 42.                                 if "`b'" == "10" {
+ 43.                                         local v`b' = "`v`b'_'+"
+ 44.                                         *local v`b' = "`v`b'_'"
+.                                 }
+ 45.                                 else {
+ 46.                                         local v`b' = "`v`b'_'"
+ 47.                                 }
+ 48.                                 qui: summ v_lo if question==`q' & frame==`f' & bbin==`b' & wave==`wave'
+ 49.                                 local v_lo = r(mean)
+ 50.                                 qui: summ v_hi if question==`q' & frame==`f' & bbin==`b' & wave==`wave'
+ 51.                                 local v_hi = r(mean)
+ 52.                                 *di "Country `country' wave `wave' question `q' frame `f' bin `b': lower value is `v_lo', upper val
+> ue is `v_hi' and mid-point is `v' (or string `v`b'')"
+.                         }
+ 53.                         label define Lframe 1 "`v1'" 2 "`v2'" 3 "`v3'" 4 "`v4'" 5 "`v5'" 6 "`v6'" 7 "`v7'" 8 "`v8'" 9 "`v9'" 10 "`v
+> 10'", replace
+ 54.                         label values bbin Lframe
+ 55.                         local extra_text = "Token Allocations from "
+ 56.                         histogram bbin if question==`q' & frame==`f' & wave==`wave' [fweight = choiceI], discrete percent fcolor(`b
+> arcolor'%90) fintensity(60) lcolor(`barcolor') ytitle("") ylabel(, labsize(medsmall) angle(horizontal)) xtitle("") xlabel(1(1)10, valu
+> elabel labsize(small)) xline(`answercoordf`f'q`q'w`wave'' ,lpattern(shortdash) lcolor(red)) title("Frame #`f'", box size(medsmall) rin
+> g(0) pos(1)) saving(`country'_`q'_`f', replace)
+ 57.                         label values bbin .
+ 58.                 }
+ 59.                 gr combine `country'_`q'_0.gph `country'_`q'_1.gph `country'_`q'_2.gph `country'_`q'_3.gph, ycommon imargin(small) 
+> title("Subjective Beliefs about COVID-19 in `country_full':" "`units'`topic'", size(large) span) subtitle("`extra_text'`reports`wave''
+>  (Wave `wave')", size(medsmall) span margin(small)) t2title("CDC Report = `answerq`q'w`wave''", size(small) margin(small) color(red)) 
+> l1title("Percentage") saving(`country'_wave`wave'_`q', replace)
+ 60. 
+.                 * save to PDF
+.                 graph export pic.png, replace
+ 61.                 putpdf paragraph, halign(center)
+ 62.                 putpdf image pic.png, linebreak width(6)
+ 63.                 if ("`q'" == "1" | "`q'" == "5") putpdf paragraph, halign(center)
+ 64. 
+. 
+.                 * clean up
+.                 forvalues f=0/3 {
+ 65.                         erase `country'_`q'_`f'.gph
+ 66.                 }
+ 67.         }
+ 68. 
+.         * save the PDF, also closing it
+.         putpdf save `country'_wave`wave'_histograms.pdf, replace
+ 69.         capture erase pic.png
+ 70. 
+. }
+(start=1, width=1)
+(note: file USA_1_0.gph not found)
+(file USA_1_0.gph saved)
+(start=1, width=1)
+(note: file USA_1_1.gph not found)
+(file USA_1_1.gph saved)
+(start=1, width=1)
+(note: file USA_1_2.gph not found)
+(file USA_1_2.gph saved)
+(start=1, width=1)
+(note: file USA_1_3.gph not found)
+(file USA_1_3.gph saved)
+(file USA_wave1_1.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_3_0.gph not found)
+(file USA_3_0.gph saved)
+(start=1, width=1)
+(note: file USA_3_1.gph not found)
+(file USA_3_1.gph saved)
+(start=1, width=1)
+(note: file USA_3_2.gph not found)
+(file USA_3_2.gph saved)
+(start=1, width=1)
+(note: file USA_3_3.gph not found)
+(file USA_3_3.gph saved)
+(file USA_wave1_3.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave1_histograms.pdf"
+(start=1, width=1)
+(note: file USA_1_0.gph not found)
+(file USA_1_0.gph saved)
+(start=1, width=1)
+(note: file USA_1_1.gph not found)
+(file USA_1_1.gph saved)
+(start=1, width=1)
+(note: file USA_1_2.gph not found)
+(file USA_1_2.gph saved)
+(start=1, width=1)
+(note: file USA_1_3.gph not found)
+(file USA_1_3.gph saved)
+(file USA_wave2_1.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_3_0.gph not found)
+(file USA_3_0.gph saved)
+(start=1, width=1)
+(note: file USA_3_1.gph not found)
+(file USA_3_1.gph saved)
+(start=1, width=1)
+(note: file USA_3_2.gph not found)
+(file USA_3_2.gph saved)
+(start=1, width=1)
+(note: file USA_3_3.gph not found)
+(file USA_3_3.gph saved)
+(file USA_wave2_3.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave2_histograms.pdf"
+(start=1, width=1)
+(note: file USA_1_0.gph not found)
+(file USA_1_0.gph saved)
+(start=1, width=1)
+(note: file USA_1_1.gph not found)
+(file USA_1_1.gph saved)
+(start=1, width=1)
+(note: file USA_1_2.gph not found)
+(file USA_1_2.gph saved)
+(start=1, width=1)
+(note: file USA_1_3.gph not found)
+(file USA_1_3.gph saved)
+(file USA_wave3_1.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_3_0.gph not found)
+(file USA_3_0.gph saved)
+(start=1, width=1)
+(note: file USA_3_1.gph not found)
+(file USA_3_1.gph saved)
+(start=1, width=1)
+(note: file USA_3_2.gph not found)
+(file USA_3_2.gph saved)
+(start=1, width=1)
+(note: file USA_3_3.gph not found)
+(file USA_3_3.gph saved)
+(file USA_wave3_3.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave3_histograms.pdf"
+(start=1, width=1)
+(note: file USA_1_0.gph not found)
+(file USA_1_0.gph saved)
+(start=1, width=1)
+(note: file USA_1_1.gph not found)
+(file USA_1_1.gph saved)
+(start=1, width=1)
+(note: file USA_1_2.gph not found)
+(file USA_1_2.gph saved)
+(start=1, width=1)
+(note: file USA_1_3.gph not found)
+(file USA_1_3.gph saved)
+(file USA_wave4_1.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_3_0.gph not found)
+(file USA_3_0.gph saved)
+(start=1, width=1)
+(note: file USA_3_1.gph not found)
+(file USA_3_1.gph saved)
+(start=1, width=1)
+(note: file USA_3_2.gph not found)
+(file USA_3_2.gph saved)
+(start=1, width=1)
+(note: file USA_3_3.gph not found)
+(file USA_3_3.gph saved)
+(file USA_wave4_3.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave4_histograms.pdf"
+(start=1, width=1)
+(note: file USA_1_0.gph not found)
+(file USA_1_0.gph saved)
+(start=1, width=1)
+(note: file USA_1_1.gph not found)
+(file USA_1_1.gph saved)
+(start=1, width=1)
+(note: file USA_1_2.gph not found)
+(file USA_1_2.gph saved)
+(start=1, width=1)
+(note: file USA_1_3.gph not found)
+(file USA_1_3.gph saved)
+(file USA_wave5_1.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_3_0.gph not found)
+(file USA_3_0.gph saved)
+(start=1, width=1)
+(note: file USA_3_1.gph not found)
+(file USA_3_1.gph saved)
+(start=1, width=1)
+(note: file USA_3_2.gph not found)
+(file USA_3_2.gph saved)
+(start=1, width=1)
+(note: file USA_3_3.gph not found)
+(file USA_3_3.gph saved)
+(file USA_wave5_3.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave5_histograms.pdf"
+(start=1, width=1)
+(note: file USA_5_0.gph not found)
+(file USA_5_0.gph saved)
+(start=1, width=1)
+(note: file USA_5_1.gph not found)
+(file USA_5_1.gph saved)
+(start=1, width=1)
+(note: file USA_5_2.gph not found)
+(file USA_5_2.gph saved)
+(start=1, width=1)
+(note: file USA_5_3.gph not found)
+(file USA_5_3.gph saved)
+(file USA_wave6_5.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+(start=1, width=1)
+(note: file USA_7_0.gph not found)
+(file USA_7_0.gph saved)
+(start=1, width=1)
+(note: file USA_7_1.gph not found)
+(file USA_7_1.gph saved)
+(start=1, width=1)
+(note: file USA_7_2.gph not found)
+(file USA_7_2.gph saved)
+(start=1, width=1)
+(note: file USA_7_3.gph not found)
+(file USA_7_3.gph saved)
+(file USA_wave6_7.gph saved)
+(file /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/pic.png written in PNG format)
+successfully created "/Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Figures/USA_wave6_histograms.pdf"
+
+. 
+. 
+. cd ..
+/Users/andrehofmeyr/Documents/GitRepos/Methods-SI
+
+. pwd
+/Users/andrehofmeyr/Documents/GitRepos/Methods-SI
+
+. 
+. 
+. /*------------------------------------ End of SECTION 1 ------------------------------------*/
+. 
+. 
+. 
+. 
+. 
+end of do-file
+. }
+
+. 
+. * Conduct analyses
+. if "$doANALYSES" == "y" {
+.         do Analysis.do
+
+. /**********************************************************************/
+. /*  SECTION 1: Analysis                         
+>     This DO file performs the Bayesian statistical analyses for the
+>     Methods journal submission */
+. /**********************************************************************/
+. 
+. /*----------------------------------------------------*/
+.    /* [>   1.  Set the globals and start the log   <] */ 
+. /*----------------------------------------------------*/
+. 
+. * Drop typo in frame 3 of wave 5?
+. global dropTYPO "y"
+
+. 
+. * Set up frames for log files
+. if "$doIHME" == "y" {
+.         local frames " -- only the IHME frame"
+. }
+
+. if "$doNON_IHME" == "y" {
+.         local frames " -- only the non-IHME frames"
+. }
+
+. if "$doFRAMES23" == "y" {
+.         local frames " -- only frames 2 and 3"
+. }
+
+. if "$doALLframes" == "y" {
+.         local frames " -- all frames"
+.         global doIHME "n"
+.         global doNON_IHME "n"
+.         global doFRAMES23 "n"
+. }
+
+. 
+. 
+. * Log
+. log using "Logs/COVID-19 Estimation for Methods paper`frames'.log", replace text name(Analysis)
+----------------------------------------------------------------------------------------------------------------------------------------
+      name:  Analysis
+       log:  /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Logs/COVID-19 Estimation for Methods paper -- all frames.log
+  log type:  text
+ opened on:  27 Apr 2021, 12:42:38
+
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   2.  Prepare the data   <] */ 
+. /*----------------------------------------------------*/
+. 
+.         * drop frame 3 for deaths in wave 5 if requested
+.         if "$dropTYPO" == "y" {
+.                 foreach x in 3 4 7 8 {
+  2.                         drop if qid == "g`x'q3" & wave==5 & usa==1
+  3.                 }
+(170 observations deleted)
+(0 observations deleted)
+(220 observations deleted)
+(0 observations deleted)
+.         }
+
+. 
+.         if "$doIHME" == "y" {
+.                 drop if frame > 0
+.         }
+
+.         if "$doNON_IHME" == "y" {
+.                 drop if frame == 0
+.         }
+
+.         if "$doFRAMES23" == "y" {
+.                 drop if frame == 0 | frame == 1
+.         }
+
+. 
+.         * binary indicators for later wave
+.         summ wave
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        wave |     22,350    2.957047    1.481594          1          6
+
+.         local Nwaves = r(max)
+
+. 
+.         * flags for the short-horizon belief questions
+.         generate int infections = 0
+
+.         generate int deaths = 0
+
+.         compress qid
+  (0 bytes saved)
+
+.         forvalues f=0/3 {
+  2.                 * for waves 1 through 5
+.                 replace infections = 1 if qid=="g1q`f'" | qid=="g1_usa" | qid=="g1_rsa"
+  3.                 replace deaths = 1 if qid=="g3q`f'" | qid=="g3_usa" | qid=="g3_rsa"
+  4. 
+.                 * just for wave 6
+.                 replace infections = 1 if wave==6 & qid=="g5q`f'" | qid=="g5_usa" | qid=="g5_rsa"
+  5.                 replace deaths = 1 if wave==6 & qid=="g7q`f'" | qid=="g7_usa" | qid=="g7_rsa"
+  6.         }
+(1,320 real changes made)
+(1,330 real changes made)
+(140 real changes made)
+(110 real changes made)
+(1,280 real changes made)
+(1,450 real changes made)
+(140 real changes made)
+(160 real changes made)
+(1,470 real changes made)
+(1,260 real changes made)
+(160 real changes made)
+(130 real changes made)
+(1,320 real changes made)
+(1,180 real changes made)
+(150 real changes made)
+(190 real changes made)
+
+.         generate int both = 0
+
+.         replace both = 1 if infections == 1 | deaths == 1
+(11,790 real changes made)
+
+.         tab infections death
+
+           |        deaths
+infections |         0          1 |     Total
+-----------+----------------------+----------
+         0 |    10,560      5,810 |    16,370 
+         1 |     5,980          0 |     5,980 
+-----------+----------------------+----------
+     Total |    16,540      5,810 |    22,350 
+
+.         tab both infections
+
+           |      infections
+      both |         0          1 |     Total
+-----------+----------------------+----------
+         0 |    10,560          0 |    10,560 
+         1 |     5,810      5,980 |    11,790 
+-----------+----------------------+----------
+     Total |    16,370      5,980 |    22,350 
+
+.         tab both death
+
+           |        deaths
+      both |         0          1 |     Total
+-----------+----------------------+----------
+         0 |    10,560          0 |    10,560 
+         1 |     5,980      5,810 |    11,790 
+-----------+----------------------+----------
+     Total |    16,540      5,810 |    22,350 
+
+.         tab wave infections
+
+           |      infections
+      Wave |         0          1 |     Total
+-----------+----------------------+----------
+         1 |     3,360      1,120 |     4,480 
+         2 |     3,900      1,300 |     5,200 
+         3 |     3,510      1,170 |     4,680 
+         4 |     2,970        990 |     3,960 
+         5 |     2,040        810 |     2,850 
+         6 |       590        590 |     1,180 
+-----------+----------------------+----------
+     Total |    16,370      5,980 |    22,350 
+
+.         tab wave deaths
+
+           |        deaths
+      Wave |         0          1 |     Total
+-----------+----------------------+----------
+         1 |     3,360      1,120 |     4,480 
+         2 |     3,900      1,300 |     5,200 
+         3 |     3,510      1,170 |     4,680 
+         4 |     2,970        990 |     3,960 
+         5 |     2,210        640 |     2,850 
+         6 |       590        590 |     1,180 
+-----------+----------------------+----------
+     Total |    16,540      5,810 |    22,350 
+
+. 
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   3.  Conduct Bayesian Analyses to test
+>                                 uniformity using OLOGIT                         <] */
+. /*----------------------------------------------------*/
+. 
+. * Ordered logit DGP
+. 
+. * construct ROPE
+. 
+.         * deterministic null
+.         generate int choiceNULL = 10
+
+.         summ choiceNULL
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  choiceNULL |     22,350          10           0         10         10
+
+.         ologit bbin [fw=choiceNULL] if both==1, cluster(subjectid)
+
+Iteration 0:   log pseudolikelihood = -271474.78  
+Iteration 1:   log pseudolikelihood = -271474.78  
+
+Ordered logistic regression                     Number of obs     =    117,900
+Log pseudolikelihood = -271474.78               Pseudo R2         =    -0.0000
+
+                            (Std. Err. adjusted for 598 clusters in subjectid)
+------------------------------------------------------------------------------
+             |               Robust
+        bbin |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       /cut1 |  -2.197225   5.42e-17                     -2.197225   -2.197225
+       /cut2 |  -1.386294   5.26e-18                     -1.386294   -1.386294
+       /cut3 |  -.8472979   1.52e-17                     -.8472979   -.8472979
+       /cut4 |  -.4054651   1.04e-17                     -.4054651   -.4054651
+       /cut5 |  -1.25e-17   1.31e-18                     -1.50e-17   -9.91e-18
+       /cut6 |   .4054651   3.90e-18                      .4054651    .4054651
+       /cut7 |   .8472979   1.05e-17                      .8472979    .8472979
+       /cut8 |   1.386294   1.30e-17                      1.386294    1.386294
+       /cut9 |   2.197225   1.15e-17                      2.197225    2.197225
+------------------------------------------------------------------------------
+
+.         matrix list e(b)
+
+e(b)[1,9]
+             /:          /:          /:          /:          /:          /:          /:          /:          /:
+          cut1        cut2        cut3        cut4        cut5        cut6        cut7        cut8        cut9
+y1  -2.1972246  -1.3862944  -.84729786  -.40546511  -1.248e-17   .40546511   .84729786   1.3862944   2.1972246
+
+.         matrix list r(table)
+
+r(table)[9,9]
+                 /:          /:          /:          /:          /:          /:          /:          /:          /:
+              cut1        cut2        cut3        cut4        cut5        cut6        cut7        cut8        cut9
+     b  -2.1972246  -1.3862944  -.84729786  -.40546511  -1.248e-17   .40546511   .84729786   1.3862944   2.1972246
+    se   5.422e-17   5.262e-18   1.522e-17   1.039e-17   1.309e-18   3.904e-18   1.048e-17   1.297e-17   1.153e-17
+     z          .b          .b          .b          .b          .b          .b          .b          .b          .b
+pvalue          .b          .b          .b          .b          .b          .b          .b          .b          .b
+    ll  -2.1972246  -1.3862944  -.84729786  -.40546511  -1.504e-17   .40546511   .84729786   1.3862944   2.1972246
+    ul  -2.1972246  -1.3862944  -.84729786  -.40546511  -9.915e-18   .40546511   .84729786   1.3862944   2.1972246
+    df           .           .           .           .           .           .           .           .           .
+  crit    1.959964    1.959964    1.959964    1.959964    1.959964    1.959964    1.959964    1.959964    1.959964
+ eform           0           0           0           0           0           0           0           0           0
+
+.         matrix r = r(table)
+
+.         forvalues c=1/9 {
+  2.                 local cut`c'_pe = r[1,`c']
+  3.         }
+
+.         margins, dydx(*) coeflegend post
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+
+Predictive margins                              Number of obs     =    117,900
+Model VCE    : Robust
+
+1._predict   : Pr(bbin==1), predict(pr outcome(1))
+2._predict   : Pr(bbin==2), predict(pr outcome(2))
+3._predict   : Pr(bbin==3), predict(pr outcome(3))
+4._predict   : Pr(bbin==4), predict(pr outcome(4))
+5._predict   : Pr(bbin==5), predict(pr outcome(5))
+6._predict   : Pr(bbin==6), predict(pr outcome(6))
+7._predict   : Pr(bbin==7), predict(pr outcome(7))
+8._predict   : Pr(bbin==8), predict(pr outcome(8))
+9._predict   : Pr(bbin==9), predict(pr outcome(9))
+10._predict  : Pr(bbin==10), predict(pr outcome(10))
+
+------------------------------------------------------------------------------
+             |     Margin  Legend
+-------------+----------------------------------------------------------------
+    _predict |
+          1  |         .1  _b[1bn._predict]
+          2  |         .1  _b[2._predict]
+          3  |         .1  _b[3._predict]
+          4  |         .1  _b[4._predict]
+          5  |         .1  _b[5._predict]
+          6  |         .1  _b[6._predict]
+          7  |         .1  _b[7._predict]
+          8  |         .1  _b[8._predict]
+          9  |         .1  _b[9._predict]
+         10  |         .1  _b[10._predict]
+------------------------------------------------------------------------------
+
+. 
+.         * simulated data
+.         local low = 0
+
+.         local hi = 20
+
+.         local rope = 0
+
+. 
+.         * evaluate ROPE over 100 simulations of random allocation
+.         qui {
+After simulation 1, ROPE is .073894261883793 if random tokens between 0 and 20
+After simulation 2, ROPE is .073894261883793 if random tokens between 0 and 20
+After simulation 3, ROPE is .073894261883793 if random tokens between 0 and 20
+After simulation 4, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 5, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 6, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 7, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 8, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 9, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 10, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 11, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 12, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 13, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 14, ROPE is .0757660407151288 if random tokens between 0 and 20
+After simulation 15, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 16, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 17, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 18, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 19, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 20, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 21, ROPE is .0758673853752341 if random tokens between 0 and 20
+After simulation 22, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 23, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 24, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 25, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 26, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 27, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 28, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 29, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 30, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 31, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 32, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 33, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 34, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 35, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 36, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 37, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 38, ROPE is .07705742639377 if random tokens between 0 and 20
+After simulation 39, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 40, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 41, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 42, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 43, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 44, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 45, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 46, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 47, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 48, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 49, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 50, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 51, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 52, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 53, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 54, ROPE is .0772222734143839 if random tokens between 0 and 20
+After simulation 55, ROPE is .077590970394751 if random tokens between 0 and 20
+After simulation 56, ROPE is .077590970394751 if random tokens between 0 and 20
+After simulation 57, ROPE is .077590970394751 if random tokens between 0 and 20
+After simulation 58, ROPE is .077590970394751 if random tokens between 0 and 20
+After simulation 59, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 60, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 61, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 62, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 63, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 64, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 65, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 66, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 67, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 68, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 69, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 70, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 71, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 72, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 73, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 74, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 75, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 76, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 77, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 78, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 79, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 80, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 81, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 82, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 83, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 84, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 85, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 86, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 87, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 88, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 89, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 90, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 91, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 92, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 93, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 94, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 95, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 96, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 97, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 98, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 99, ROPE is .079098808525627 if random tokens between 0 and 20
+After simulation 100, ROPE is .079098808525627 if random tokens between 0 and 20
+
+.         margins, dydx(*) coeflegend post
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+
+Predictive margins                              Number of obs     =    118,094
+Model VCE    : Robust
+
+1._predict   : Pr(bbin==1), predict(pr outcome(1))
+2._predict   : Pr(bbin==2), predict(pr outcome(2))
+3._predict   : Pr(bbin==3), predict(pr outcome(3))
+4._predict   : Pr(bbin==4), predict(pr outcome(4))
+5._predict   : Pr(bbin==5), predict(pr outcome(5))
+6._predict   : Pr(bbin==6), predict(pr outcome(6))
+7._predict   : Pr(bbin==7), predict(pr outcome(7))
+8._predict   : Pr(bbin==8), predict(pr outcome(8))
+9._predict   : Pr(bbin==9), predict(pr outcome(9))
+10._predict  : Pr(bbin==10), predict(pr outcome(10))
+
+------------------------------------------------------------------------------
+             |     Margin  Legend
+-------------+----------------------------------------------------------------
+    _predict |
+          1  |   .0990228  _b[1bn._predict]
+          2  |    .101487  _b[2._predict]
+          3  |   .0998019  _b[3._predict]
+          4  |   .1014615  _b[4._predict]
+          5  |   .0997934  _b[5._predict]
+          6  |   .1000474  _b[6._predict]
+          7  |   .1001829  _b[7._predict]
+          8  |   .0967958  _b[8._predict]
+          9  |   .0997764  _b[9._predict]
+         10  |   .1016309  _b[10._predict]
+------------------------------------------------------------------------------
+
+. 
+.         local low = 0
+
+.         local hi = 50
+
+.         replace choiceNULL = runiformint(`low',`hi')
+(21,890 real changes made)
+
+.         summ choiceNULL
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  choiceNULL |     22,350    24.96819    14.73513          0         50
+
+.         ologit bbin [fw=choiceNULL] if both==1, cluster(subjectid)
+
+Iteration 0:   log pseudolikelihood = -676755.35  
+Iteration 1:   log pseudolikelihood = -676755.35  
+
+Ordered logistic regression                     Number of obs     =    293,921
+Log pseudolikelihood = -676755.35               Pseudo R2         =     0.0000
+
+                            (Std. Err. adjusted for 598 clusters in subjectid)
+------------------------------------------------------------------------------
+             |               Robust
+        bbin |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       /cut1 |  -2.206448   .0181047                     -2.241933   -2.170964
+       /cut2 |  -1.379677    .012999                     -1.405155     -1.3542
+       /cut3 |  -.8375361   .0115816                     -.8602356   -.8148367
+       /cut4 |  -.3994637   .0107191                     -.4204728   -.3784546
+       /cut5 |   .0005784    .010607                     -.0202109    .0213677
+       /cut6 |   .4100944   .0111041                      .3883306    .4318581
+       /cut7 |   .8511292   .0122937                      .8270341    .8752243
+       /cut8 |   1.399321   .0143689                      1.371158    1.427483
+       /cut9 |   2.194321   .0178178                      2.159399    2.229243
+------------------------------------------------------------------------------
+
+.         matrix r = r(table)
+
+.         local rope = 0
+
+.         forvalues c=1/9 {
+  2.                 local cut`c'_lo = r[5,`c']
+  3.                 local cut`c'_hi = r[6,`c']
+  4.                 local diff = abs(`cut`c'_hi' - `cut`c'_lo')
+  5.                 if `diff' > `rope' {
+  6.                         local rope = `diff'
+  7.                         di "ROPE is now `rope'
+  8.                 }
+  9.                 else {
+ 10.                         di "CI difference is now `diff'
+ 11.                 }
+ 12.         }
+ROPE is now .0709689704075802
+CI difference is now .050954960724352
+CI difference is now .0453988961779215
+CI difference is now .0420182235293505
+CI difference is now .0415786299417324
+CI difference is now .0435274171294975
+CI difference is now .0481902228951336
+CI difference is now .05632514569782
+CI difference is now .0698446837340621
+
+.         local rope50 = `rope'
+
+.         di "ROPE is `rope' if random tokens between 0 and 50"
+ROPE is .0709689704075802 if random tokens between 0 and 50
+
+.         margins, dydx(*) coeflegend post
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+
+Predictive margins                              Number of obs     =    293,921
+Model VCE    : Robust
+
+1._predict   : Pr(bbin==1), predict(pr outcome(1))
+2._predict   : Pr(bbin==2), predict(pr outcome(2))
+3._predict   : Pr(bbin==3), predict(pr outcome(3))
+4._predict   : Pr(bbin==4), predict(pr outcome(4))
+5._predict   : Pr(bbin==5), predict(pr outcome(5))
+6._predict   : Pr(bbin==6), predict(pr outcome(6))
+7._predict   : Pr(bbin==7), predict(pr outcome(7))
+8._predict   : Pr(bbin==8), predict(pr outcome(8))
+9._predict   : Pr(bbin==9), predict(pr outcome(9))
+10._predict  : Pr(bbin==10), predict(pr outcome(10))
+
+------------------------------------------------------------------------------
+             |     Margin  Legend
+-------------+----------------------------------------------------------------
+    _predict |
+          1  |   .0991729  _b[1bn._predict]
+          2  |   .1018879  _b[2._predict]
+          3  |   .1009931  _b[3._predict]
+          4  |   .0993873  _b[4._predict]
+          5  |   .0987034  _b[5._predict]
+          6  |   .1009659  _b[6._predict]
+          7  |   .0996935  _b[7._predict]
+          8  |   .1012721  _b[8._predict]
+          9  |   .0976623  _b[9._predict]
+         10  |   .1002616  _b[10._predict]
+------------------------------------------------------------------------------
+
+. 
+.         local low = 0
+
+.         local hi = 100
+
+.         replace choiceNULL = runiformint(`low',`hi')
+(22,109 real changes made)
+
+.         summ choiceNULL
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  choiceNULL |     22,350    50.54671    29.26409          0        100
+
+.         ologit bbin [fw=choiceNULL] if both==1, cluster(subjectid)
+
+Iteration 0:   log pseudolikelihood = -1368828.2  
+Iteration 1:   log pseudolikelihood = -1368828.2  
+
+Ordered logistic regression                     Number of obs     =    594,497
+Log pseudolikelihood = -1368828.2               Pseudo R2         =    -0.0000
+
+                            (Std. Err. adjusted for 598 clusters in subjectid)
+------------------------------------------------------------------------------
+             |               Robust
+        bbin |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       /cut1 |  -2.204097   .0184458                      -2.24025   -2.167944
+       /cut2 |  -1.375348   .0134758                      -1.40176   -1.348936
+       /cut3 |  -.8359502   .0116745                     -.8588319   -.8130685
+       /cut4 |  -.4050923   .0106968                     -.4260577   -.3841268
+       /cut5 |  -.0049487    .010325                     -.0251854     .015288
+       /cut6 |   .3973821   .0106413                      .3765255    .4182387
+       /cut7 |    .840763   .0113397                      .8185376    .8629885
+       /cut8 |   1.377637   .0128756                      1.352401    1.402873
+       /cut9 |   2.178041   .0178596                      2.143037    2.213046
+------------------------------------------------------------------------------
+
+.         matrix r = r(table)
+
+.         local rope = 0
+
+.         forvalues c=1/9 {
+  2.                 local cut`c'_lo = r[5,`c']
+  3.                 local cut`c'_hi = r[6,`c']
+  4.                 local diff = abs(`cut`c'_hi' - `cut`c'_lo')
+  5.                 if `diff' > `rope' {
+  6.                         local rope = `diff'
+  7.                         di "ROPE is now `rope'
+  8.                 }
+  9.                 else {
+ 10.                         di "CI difference is now `diff'
+ 11.                 }
+ 12.         }
+ROPE is now .072306030433674
+CI difference is now .052824243347948
+CI difference is now .0457633889423155
+CI difference is now .0419308654699801
+CI difference is now .0404734351368195
+CI difference is now .0417131737041628
+CI difference is now .0444508495559552
+CI difference is now .0504715163476641
+CI difference is now .070008467485577
+
+.         local rope100 = `rope'
+
+.         di "ROPE is `rope' if random tokens between 0 and 100"
+ROPE is .072306030433674 if random tokens between 0 and 100
+
+.         margins, dydx(*) coeflegend post
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+
+Predictive margins                              Number of obs     =    594,497
+Model VCE    : Robust
+
+1._predict   : Pr(bbin==1), predict(pr outcome(1))
+2._predict   : Pr(bbin==2), predict(pr outcome(2))
+3._predict   : Pr(bbin==3), predict(pr outcome(3))
+4._predict   : Pr(bbin==4), predict(pr outcome(4))
+5._predict   : Pr(bbin==5), predict(pr outcome(5))
+6._predict   : Pr(bbin==6), predict(pr outcome(6))
+7._predict   : Pr(bbin==7), predict(pr outcome(7))
+8._predict   : Pr(bbin==8), predict(pr outcome(8))
+9._predict   : Pr(bbin==9), predict(pr outcome(9))
+10._predict  : Pr(bbin==10), predict(pr outcome(10))
+
+------------------------------------------------------------------------------
+             |     Margin  Legend
+-------------+----------------------------------------------------------------
+    _predict |
+          1  |   .0993832  _b[1bn._predict]
+          2  |   .1023739  _b[2._predict]
+          3  |   .1006313  _b[3._predict]
+          4  |   .0977011  _b[4._predict]
+          5  |   .0986733  _b[5._predict]
+          6  |   .0992957  _b[6._predict]
+          7  |   .1005674  _b[7._predict]
+          8  |   .0999854  _b[8._predict]
+          9  |   .0996489  _b[9._predict]
+         10  |   .1017398  _b[10._predict]
+------------------------------------------------------------------------------
+
+. 
+.         * actual data
+.         ologit bbin [fw=reportsI] if both==1, cluster(subjectid)
+
+Iteration 0:   log pseudolikelihood = -260794.34  
+Iteration 1:   log pseudolikelihood = -260794.34  
+
+Ordered logistic regression                     Number of obs     =    117,900
+Log pseudolikelihood = -260794.34               Pseudo R2         =    -0.0000
+
+                            (Std. Err. adjusted for 598 clusters in subjectid)
+------------------------------------------------------------------------------
+             |               Robust
+        bbin |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       /cut1 |  -1.496022   .0618501                     -1.617246   -1.374799
+       /cut2 |  -.6126328   .0569905                     -.7243321   -.5009334
+       /cut3 |  -.0717865   .0555597                     -.1806816    .0371086
+       /cut4 |   .3433508   .0567497                      .2321235    .4545781
+       /cut5 |   .7429567    .058681                      .6279442    .8579693
+       /cut6 |   1.141459   .0628531                      1.018269    1.264649
+       /cut7 |   1.513706   .0683905                      1.379663    1.647749
+       /cut8 |   1.949521   .0766409                      1.799308    2.099734
+       /cut9 |   2.637695   .0883513                       2.46453     2.81086
+------------------------------------------------------------------------------
+
+.         margins, dydx(*) coeflegend post
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+Warning: prediction constant over observations.
+
+Predictive margins                              Number of obs     =    117,900
+Model VCE    : Robust
+
+1._predict   : Pr(bbin==1), predict(pr outcome(1))
+2._predict   : Pr(bbin==2), predict(pr outcome(2))
+3._predict   : Pr(bbin==3), predict(pr outcome(3))
+4._predict   : Pr(bbin==4), predict(pr outcome(4))
+5._predict   : Pr(bbin==5), predict(pr outcome(5))
+6._predict   : Pr(bbin==6), predict(pr outcome(6))
+7._predict   : Pr(bbin==7), predict(pr outcome(7))
+8._predict   : Pr(bbin==8), predict(pr outcome(8))
+9._predict   : Pr(bbin==9), predict(pr outcome(9))
+10._predict  : Pr(bbin==10), predict(pr outcome(10))
+
+------------------------------------------------------------------------------
+             |     Margin  Legend
+-------------+----------------------------------------------------------------
+    _predict |
+          1  |   .1830195  _b[1bn._predict]
+          2  |   .1684394  _b[2._predict]
+          3  |   .1306022  _b[3._predict]
+          4  |   .1029432  _b[4._predict]
+          5  |   .0926378  _b[5._predict]
+          6  |   .0803053  _b[6._predict]
+          7  |   .0616624  _b[7._predict]
+          8  |   .0557846  _b[8._predict]
+          9  |   .0578541  _b[9._predict]
+         10  |   .0667515  _b[10._predict]
+------------------------------------------------------------------------------
+
+.         test  (_b[1bn._predict] = 0.1) (_b[2._predict] = 0.1) (_b[3._predict] = 0.1) (_b[4._predict] = 0.1) (_b[5._predict] = 0.1) (_b
+> [6._predict] = 0.1) (_b[7._predict] = 0.1) (_b[8._predict] = 0.1) (_b[9._predict] = 0.1) (_b[10._predict] = 0.1)
+
+ ( 1)  1bn._predict = .1
+ ( 2)  2._predict = .1
+ ( 3)  3._predict = .1
+ ( 4)  4._predict = .1
+ ( 5)  5._predict = .1
+ ( 6)  6._predict = .1
+ ( 7)  7._predict = .1
+ ( 8)  8._predict = .1
+ ( 9)  9._predict = .1
+ (10)  10._predict = .1
+       Constraint 8 dropped
+
+           chi2(  9) =  233.36
+         Prob > chi2 =    0.0000
+
+. 
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if both==1, cluster(subjectid)
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =    117,900
+                                                 Acceptance rate  =      .2419
+                                                 Efficiency:  min =    .002243
+                                                              avg =    .003552
+Log marginal-likelihood = -260834.74                          max =    .007692
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.496009   .0073816   .001447  -1.496256  -1.511537    -1.4817
+        cut2 | -.6125626   .0059778   .000952  -.6127691   -.624282  -.6006295
+        cut3 | -.0711747   .0058071   .001226  -.0714621  -.0825427  -.0594747
+        cut4 |  .3445153   .0059405   .001156   .3440767    .333965   .3570818
+        cut5 |  .7440441   .0064969   .001009   .7439517    .731983   .7567779
+        cut6 |  1.143308   .0066602   .000759   1.143252   1.130932    1.15632
+        cut7 |  1.516984   .0076141   .001395     1.5171   1.502518   1.532235
+        cut8 |  1.953943   .0086434   .001621   1.954119   1.936328   1.969743
+        cut9 |    2.6407    .012385   .002306    2.63971   2.616402   2.663983
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+.         local rope = `rope20'
+
+.         forvalues c=1/9 {
+  2.                 local c`c'_lo = `cut`c'_pe'-`rope'
+  3.                 local c`c'_hi = `cut`c'_pe'+`rope'
+  4.                 di "Cut `c' intervals: `c`c'_lo'       `c`c'_hi'"
+  5.         }
+Cut 1 intervals: -2.276323385861847       -2.118125768810593
+Cut 2 intervals: -1.465393169645517       -1.307195552594263
+Cut 3 intervals: -.9263966689128307       -.7681990518615767
+Cut 4 intervals: -.4845639166337914       -.3263662995825374
+Cut 5 intervals: -.079098808525627       .079098808525627
+Cut 6 intervals: .3263662995825373       .4845639166337913
+Cut 7 intervals: .7681990518615766       .9263966689128306
+Cut 8 intervals: 1.307195552594263       1.465393169645517
+Cut 9 intervals: 2.118125768810592       2.276323385861846
+
+.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') upp
+> er(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) (
+> {cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') up
+> per(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) 
+> ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+
+. 
+. 
+. * Bayesian version, diffuse priors
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if both==1, cluster(subjectid)
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =    117,900
+                                                 Acceptance rate  =      .2196
+                                                 Efficiency:  min =    .001875
+                                                              avg =    .004231
+Log marginal-likelihood = -260834.92                          max =     .01436
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.496872   .0075802   .000633  -1.496996  -1.511328  -1.481584
+        cut2 | -.6128709   .0062224   .000782   -.613061  -.6245099    -.60045
+        cut3 | -.0720474   .0061167   .000988  -.0721679  -.0838856  -.0594627
+        cut4 |  .3427387   .0063067   .001119   .3423772    .330477   .3554219
+        cut5 |  .7425842   .0068349   .001496   .7419651   .7312646   .7582925
+        cut6 |  1.140793   .0073449   .001638   1.139916    1.12836   1.156716
+        cut7 |  1.512471   .0075636   .001728   1.511623   1.499557   1.529791
+        cut8 |  1.947481   .0081602   .001885   1.946191   1.931984   1.964778
+        cut9 |  2.636204   .0114267   .002291   2.634344   2.616089   2.658944
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') upp
+> er(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) (
+> {cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') up
+> per(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) 
+> ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+
+.         matrix list r(summary)
+
+r(summary)[1,3]
+          Mean  Std Dev     MCSE
+prob1        0        0        0
+
+.         matrix x = r(summary)
+
+.         local p_val_both = x[1,1]
+
+. 
+.         * just infections
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if infections==1, cluster(subjectid)
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     59,800
+                                                 Acceptance rate  =      .2292
+                                                 Efficiency:  min =    .002544
+                                                              avg =    .006238
+Log marginal-likelihood = -133455.67                          max =     .01556
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.486331   .0101172   .000811  -1.486359  -1.506971  -1.467856
+        cut2 | -.6524709   .0082564   .000809  -.6525653  -.6693603  -.6375459
+        cut3 | -.1622426   .0081091   .000973  -.1627648  -.1769715  -.1460634
+        cut4 |  .2426967   .0079075   .001041   .2426147   .2284535   .2586532
+        cut5 |   .623994   .0076502      .001   .6240572   .6088211   .6385313
+        cut6 |  1.012306   .0078549   .001356   1.012417    .997851   1.027969
+        cut7 |  1.369202    .007816   .001425   1.368912   1.353281   1.383478
+        cut8 |  1.832127    .008976   .001731   1.831851   1.815558   1.850482
+        cut9 |  2.578548   .0151875   .003011   2.578997   2.549729   2.606372
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') upp
+> er(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) (
+> {cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') up
+> per(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) 
+> ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+
+.         matrix x = r(summary)
+
+.         local p_val_i = x[1,1]
+
+. 
+.         * just deaths
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if deaths==1, cluster(subjectid)
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     58,100
+                                                 Acceptance rate  =      .2212
+                                                 Efficiency:  min =    .002407
+                                                              avg =    .005052
+Log marginal-likelihood = -127069.43                          max =     .01164
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.505527   .0100422   .001197  -1.505781  -1.523309  -1.483913
+        cut2 | -.5718597   .0083843   .000777  -.5720231  -.5883039  -.5559037
+        cut3 |  .0214995   .0078328   .000938   .0214561    .005039   .0356747
+        cut4 |  .4509197    .008924   .001407   .4509038   .4340782   .4669734
+        cut5 |  .8735141   .0091633    .00169   .8731478    .856509   .8911909
+        cut6 |   1.28719   .0100082   .002018   1.286845   1.270112   1.306473
+        cut7 |  1.682531   .0112304   .002289   1.682114   1.662446   1.704707
+        cut8 |  2.089211   .0133721   .002651   2.089752   2.063992   2.114275
+        cut9 |  2.710232   .0168554   .002284   2.710777   2.675773   2.740096
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') upp
+> er(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) (
+> {cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') up
+> per(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')) 
+> ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+
+.         matrix x = r(summary)
+
+.         local p_val_d = x[1,1]
+
+. 
+. * now over waves
+. forvalues w=1/6 {
+  2. 
+.         di "Testing just with responses from wave `w':"
+  3. 
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if wave==`w' & both==1, cluster(subjectid)
+  4.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') 
+> upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')
+> ) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+  5.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo')
+>  upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi'
+> )) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+  6.         matrix x = r(summary)
+  7.         local p_val_`w'_both = x[1,1]
+  8. 
+.         * just infections
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if wave==`w' & infections==1, cluster(subjectid)
+  9.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') 
+> upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')
+> ) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+ 10.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo')
+>  upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi'
+> )) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+ 11.         matrix x = r(summary)
+ 12.         local p_val_`w'_i = x[1,1]
+ 13. 
+.         * just deaths
+.         bayes, clevel(95) hpd: ologit bbin [fw=reportsI] if wave==`w'  & deaths==1, cluster(subjectid)
+ 14.         bayestest interval ({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo') 
+> upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi')
+> ) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi'))
+ 15.         bayestest interval (({cut1}, lower(`c1_lo') upper(`c1_hi')) ({cut2}, lower(`c2_lo') upper(`c2_hi')) ({cut3}, lower(`c3_lo')
+>  upper(`c3_hi')) ({cut4}, lower(`c4_lo') upper(`c4_hi')) ({cut5}, lower(`c5_lo') upper(`c5_hi')) ({cut6}, lower(`c6_lo') upper(`c6_hi'
+> )) ({cut7}, lower(`c7_lo') upper(`c7_hi')) ({cut8}, lower(`c8_lo') upper(`c8_hi')) ({cut9}, lower(`c9_lo') upper(`c9_hi')), joint)
+ 16.         matrix x = r(summary)
+ 17.         local p_val_`w'_d = x[1,1]
+ 18. 
+.         * display estimates -- full display only after wave 6 is run
+.         di "Posterior probability for ROPE assuming ordered logit DGP:"
+ 19.         di "Infections"
+ 20.         di "       Over all waves: `p_val_i'"
+ 21.         di "       Wave 1:         `p_val_1_i'"
+ 22.         di "       Wave 2:         `p_val_2_i'"
+ 23.         di "       Wave 3:         `p_val_3_i'"
+ 24.         di "       Wave 4:         `p_val_4_i'"
+ 25.         di "       Wave 5:         `p_val_5_i'"
+ 26.         di "       Wave 6:         `p_val_6_i'"
+ 27.         di "Deaths"
+ 28.         di "       Over all waves: `p_val_d'"
+ 29.         di "       Wave 1:         `p_val_1_d'"
+ 30.         di "       Wave 2:         `p_val_2_d'"
+ 31.         di "       Wave 3:         `p_val_3_d'"
+ 32.         di "       Wave 4:         `p_val_4_d'"
+ 33.         di "       Wave 5:         `p_val_5_d'"
+ 34.         di "       Wave 6:         `p_val_6_d'"
+ 35.         di "Both Infections and Deaths"
+ 36.         di "       Over all waves: `p_val_both'"
+ 37.         di "       Wave 1:         `p_val_1_both'"
+ 38.         di "       Wave 2:         `p_val_2_both'"
+ 39.         di "       Wave 3:         `p_val_3_both'"
+ 40.         di "       Wave 4:         `p_val_4_both'"
+ 41.         di "       Wave 5:         `p_val_5_both'"
+ 42.         di "       Wave 6:         `p_val_6_both'"
+ 43. 
+. }
+Testing just with responses from wave 1:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     22,400
+                                                 Acceptance rate  =      .2667
+                                                 Efficiency:  min =    .006146
+                                                              avg =      .0142
+Log marginal-likelihood = -50164.418                          max =      .0206
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.870141   .0183003   .002334  -1.869496  -1.907948  -1.835833
+        cut2 | -.9984444   .0145241   .001636  -.9980449  -1.028717  -.9720186
+        cut3 | -.3790262   .0138673   .001265  -.3791176  -.4045012   -.350928
+        cut4 |  .1559764   .0133513   .000955   .1556601   .1289671   .1816779
+        cut5 |  .6859236   .0145807    .00123   .6857822   .6578059   .7135753
+        cut6 |  1.160395   .0154787   .001079   1.159986   1.131878   1.191182
+        cut7 |  1.565532   .0167951   .001283   1.565816   1.536232   1.601925
+        cut8 |  1.975382   .0187742   .001754    1.97527    1.94106   2.013864
+        cut9 |  2.645988   .0266241   .001933    2.64645   2.593439   2.697216
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     11,200
+                                                 Acceptance rate  =      .1595
+                                                 Efficiency:  min =     .00301
+                                                              avg =    .009101
+Log marginal-likelihood = -25323.867                          max =     .02421
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.904823   .0253855   .002292  -1.906154  -1.948774  -1.856633
+        cut2 | -.9539763   .0208401   .001339  -.9541905  -.9946187  -.9135804
+        cut3 |  -.380639   .0192636   .001546  -.3807133  -.4196655  -.3460948
+        cut4 |   .085243   .0188272   .002187   .0855133   .0463684   .1221124
+        cut5 |  .5448689   .0195033   .002418   .5452288   .5068804   .5814244
+        cut6 |  .9859905   .0208819   .002942   .9859295   .9455111   1.025726
+        cut7 |  1.329407   .0231331   .003856   1.330905   1.287138   1.372067
+        cut8 |  1.743462   .0265417   .004838   1.746304   1.691567   1.788427
+        cut9 |  2.515023   .0360895   .005481   2.517298   2.439191   2.584719
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     11,200
+                                                 Acceptance rate  =      .2029
+                                                 Efficiency:  min =    .001735
+                                                              avg =    .002962
+Log marginal-likelihood =   -24699.1                          max =    .005969
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 |  -1.83853   .0258663   .003348  -1.839379  -1.889036   -1.79043
+        cut2 |  -1.04376   .0229236   .003972  -1.044389  -1.088911  -1.000697
+        cut3 | -.3794475   .0198673   .003073  -.3793279  -.4170385  -.3420526
+        cut4 |  .2236681   .0194594   .003671   .2227349   .1891552   .2653831
+        cut5 |   .831061   .0229974   .005239   .8292398   .7905645   .8794191
+        cut6 |  1.344551   .0228707   .005117   1.343708   1.301018   1.389456
+        cut7 |  1.828917   .0248384   .005963    1.82845   1.780912   1.877989
+        cut8 |  2.240637   .0271303   .006057   2.239682    2.18758   2.290991
+        cut9 |  2.771723   .0250552   .004818   2.771897   2.720144   2.817708
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Testing just with responses from wave 2:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     26,000
+                                                 Acceptance rate  =      .2866
+                                                 Efficiency:  min =    .001943
+                                                              avg =    .002682
+Log marginal-likelihood = -56843.568                          max =    .003247
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.298013   .0150956   .002746  -1.298865  -1.327761  -1.267339
+        cut2 | -.4543569    .012284   .002787  -.4548265  -.4777954  -.4306018
+        cut3 |  .0280851   .0124098   .002295   .0281898   .0058713   .0528865
+        cut4 |  .4230349   .0125693   .002206   .4228206     .39724   .4457814
+        cut5 |  .7871987    .013416   .002703   .7871784   .7623332   .8126987
+        cut6 |  1.160584   .0141083   .002569   1.160532   1.132568   1.186406
+        cut7 |  1.541402   .0159043   .003447    1.54142   1.511244   1.571363
+        cut8 |  2.061636   .0208917   .004494   2.062489   2.025472   2.102544
+        cut9 |  2.779927   .0288938   .005084   2.781652   2.724144    2.83682
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     13,000
+                                                 Acceptance rate  =      .2542
+                                                 Efficiency:  min =    .003064
+                                                              avg =    .004711
+Log marginal-likelihood = -29056.464                          max =     .00627
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.458272   .0220544   .003957  -1.458521  -1.502789  -1.418712
+        cut2 | -.6591813   .0175357   .003168  -.6594399   -.690811  -.6231303
+        cut3 | -.1821038   .0171026    .00216  -.1823444  -.2131423  -.1468398
+        cut4 |  .2343576   .0175248   .002311   .2348055   .1990426   .2704188
+        cut5 |  .5765661   .0184805   .002334   .5777372   .5416458    .613094
+        cut6 |  .9389149   .0200925   .003023    .938749   .8957776   .9746158
+        cut7 |  1.297343   .0206667   .003004    1.29665   1.257756   1.338977
+        cut8 |  1.827553   .0232663   .003085   1.826637    1.77928   1.871882
+        cut9 |  2.645957   .0318319   .005718   2.647812   2.581736   2.705617
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     13,000
+                                                 Acceptance rate  =      .2518
+                                                 Efficiency:  min =    .001468
+                                                              avg =    .001845
+Log marginal-likelihood = -27608.201                          max =    .002571
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.153357   .0224656   .005319  -1.152851   -1.19628    -1.1107
+        cut2 | -.2684272   .0190305   .004411  -.2680068  -.3066874  -.2347942
+        cut3 |  .2273311   .0188422    .00451   .2292157    .190393   .2613872
+        cut4 |  .6073141   .0193428   .004764    .608312   .5691356    .640896
+        cut5 |  1.006732   .0210371   .005333   1.008289   .9684314   1.046054
+        cut6 |  1.396175   .0241841   .006312   1.398289   1.351942   1.438972
+        cut7 |  1.821392   .0274398   .006209   1.822518   1.769942   1.874178
+        cut8 |  2.339571   .0313757   .006188   2.340037   2.276808   2.397229
+        cut9 |  2.926295   .0337516   .007515   2.925667    2.86393   2.990324
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Testing just with responses from wave 3:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     23,400
+                                                 Acceptance rate  =      .1977
+                                                 Efficiency:  min =    .002578
+                                                              avg =    .004995
+Log marginal-likelihood = -50038.064                          max =    .009017
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.291484   .0151929      .002  -1.292207  -1.321595  -1.264339
+        cut2 | -.3349069   .0121072   .001525  -.3348067   -.356907  -.3105254
+        cut3 |  .2500128   .0105084   .001914   .2494292   .2299528   .2694667
+        cut4 |  .6242762   .0095454   .001508   .6243001   .6060585   .6423409
+        cut5 |  .9655089   .0096454   .001398   .9653921   .9462124   .9825746
+        cut6 |  1.393236   .0112082    .00118   1.393039   1.371325   1.415098
+        cut7 |  1.753498   .0128135   .001651   1.753772    1.72769    1.77671
+        cut8 |  2.151519   .0152545    .00258   2.150676   2.124019   2.181096
+        cut9 |  2.920278   .0204572   .004029   2.919825   2.883775   2.960105
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     11,700
+                                                 Acceptance rate  =      .2458
+                                                 Efficiency:  min =    .008732
+                                                              avg =     .01586
+Log marginal-likelihood = -23854.704                          max =     .02341
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 |  -.864501   .0213093   .002033  -.8645671   -.909206  -.8235387
+        cut2 |  .0124567    .016887   .001186   .0123403   -.019227   .0456301
+        cut3 |  .4842238   .0192165   .001264   .4833219   .4491569    .523231
+        cut4 |  .7804166   .0202405   .001621   .7802173   .7416616   .8200741
+        cut5 |  1.035727   .0216883   .001975   1.034572   .9951633   1.079061
+        cut6 |  1.446914   .0229467   .002349   1.446007   1.403148   1.493474
+        cut7 |   1.85798   .0260029   .001886   1.857804   1.808182   1.907081
+        cut8 |  2.244463   .0306219   .002001   2.244035   2.185325   2.304644
+        cut9 |  3.150745   .0475724   .005091   3.150944   3.058952   3.246419
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     11,700
+                                                 Acceptance rate  =      .2111
+                                                 Efficiency:  min =    .005237
+                                                              avg =     .01213
+Log marginal-likelihood = -25590.855                          max =     .02703
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.872311   .0268995   .003188  -1.872195  -1.923854  -1.820344
+        cut2 | -.7218761   .0195301   .002699  -.7211367   -.757465   -.682222
+        cut3 |    .00271   .0188713   .002085   .0034766  -.0315045   .0410656
+        cut4 |   .450622   .0190713   .001802   .4508778   .4154464   .4883544
+        cut5 |  .8675779   .0200718   .001527   .8675048   .8302014   .9079238
+        cut6 |  1.306337   .0228889   .002348   1.306607   1.262258   1.350385
+        cut7 |  1.620194   .0239927   .002243   1.620798   1.576171   1.667679
+        cut8 |  2.024403   .0282652   .002564   2.024436   1.972981   2.078045
+        cut9 |  2.674225   .0387344   .002356   2.674113   2.588522   2.742383
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         
+       Wave 5:         
+       Wave 6:         
+Testing just with responses from wave 4:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     19,800
+                                                 Acceptance rate  =      .2136
+                                                 Efficiency:  min =     .00581
+                                                              avg =     .01352
+Log marginal-likelihood = -44174.112                          max =     .03229
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.511646   .0185516   .002434   -1.51151  -1.546974  -1.475602
+        cut2 | -.6689262   .0138444   .001367  -.6689035  -.6945721  -.6407689
+        cut3 | -.1743023   .0148557   .001459  -.1749084   -.204986  -.1459939
+        cut4 |  .2363032   .0146185   .001333   .2364652    .207505   .2639132
+        cut5 |  .5993494   .0153022   .001285   .5993667   .5695261   .6278729
+        cut6 |  1.033257   .0161661   .001223   1.033338   1.002326    1.06597
+        cut7 |  1.377897   .0175886   .001568   1.378594   1.342125   1.411715
+        cut8 |  1.797235   .0199491    .00111   1.797869   1.755735   1.832988
+        cut9 |   2.40965    .025085   .003065   2.408886   2.361675   2.457914
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      9,900
+                                                 Acceptance rate  =      .2501
+                                                 Efficiency:  min =    .007626
+                                                              avg =     .01828
+Log marginal-likelihood = -22515.916                          max =     .04682
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 |  -1.89891   .0304638   .003488  -1.898775   -1.95598  -1.840118
+        cut2 | -1.081143   .0230078   .001345  -1.081623   -1.12599  -1.035893
+        cut3 | -.5085978   .0206886   .001633  -.5087183  -.5482403  -.4695871
+        cut4 | -.0177104   .0204517   .001682  -.0180862   -.056607   .0222582
+        cut5 |  .4014176   .0205151   .002112   .4017187   .3646181   .4453101
+        cut6 |  .8567706   .0207255   .001884   .8560749    .816336   .8951778
+        cut7 |  1.179403   .0232501   .001827   1.179525   1.138349   1.224758
+        cut8 |   1.63827    .027581   .001275   1.639142   1.585476   1.690185
+        cut9 |  2.197299   .0364154   .003288   2.196984   2.131603   2.274947
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |     .9668     0.17917   .0085006
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      9,900
+                                                 Acceptance rate  =       .182
+                                                 Efficiency:  min =    .001496
+                                                              avg =     .00251
+Log marginal-likelihood = -21317.065                          max =    .004912
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.199994   .0213834   .003051  -1.199326  -1.240808  -1.157016
+        cut2 | -.3011974   .0203506   .004323  -.3022748  -.3359844  -.2565841
+        cut3 |  .1560636   .0199634   .003705   .1553095   .1145761   .1941667
+        cut4 |  .5038603   .0208045   .004083   .5028901   .4652025   .5453942
+        cut5 |  .8153255   .0210944   .004133    .814042   .7732418   .8567287
+        cut6 |  1.232986   .0242307   .005013   1.232142   1.186791   1.277088
+        cut7 |  1.615034   .0294583   .006959   1.613971   1.560514    1.67147
+        cut8 |  1.991862   .0337959   .008121   1.989676   1.928243   2.052796
+        cut9 |  2.687944   .0415744    .01075   2.688388   2.608248   2.766679
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         
+       Wave 6:         
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         
+       Wave 6:         
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         
+       Wave 6:         
+Testing just with responses from wave 5:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     14,500
+                                                 Acceptance rate  =      .1927
+                                                 Efficiency:  min =    .003771
+                                                              avg =    .007965
+Log marginal-likelihood = -30847.249                          max =     .01285
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.329394   .0171603   .002468  -1.330288  -1.360784   -1.29458
+        cut2 | -.3814301   .0159892   .001956  -.3815996  -.4129985  -.3514139
+        cut3 |  .2819801   .0165976   .001714   .2821525   .2522639    .315496
+        cut4 |  .7060447   .0163683   .001444   .7060844   .6744933   .7367461
+        cut5 |  1.077795   .0171772   .001772   1.077788   1.042664   1.108468
+        cut6 |  1.423311   .0194704   .002162   1.424566   1.383547   1.458259
+        cut7 |  1.799189   .0227753   .002192   1.799436    1.75516    1.84267
+        cut8 |   2.22033   .0271387   .003542   2.220576   2.168923     2.2742
+        cut9 |  2.903203   .0342632    .00558   2.902793   2.835639   2.968913
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      8,100
+                                                 Acceptance rate  =      .2243
+                                                 Efficiency:  min =    .002174
+                                                              avg =    .004225
+Log marginal-likelihood = -17321.647                          max =    .006637
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.261822   .0272825   .003632  -1.260875  -1.314489  -1.207831
+        cut2 | -.3759637    .023789   .003654  -.3776158   -.421905  -.3304911
+        cut3 |  .2076889   .0222682   .003638   .2071241   .1655003   .2522788
+        cut4 |  .6464783   .0248538   .003567   .6468218   .5970101   .6963431
+        cut5 |  1.041626   .0259369   .003184   1.041731   .9924899   1.091159
+        cut6 |  1.419497   .0278802   .003852   1.419069   1.364066   1.473172
+        cut7 |  1.821631   .0316044   .005719   1.821466   1.759598   1.883273
+        cut8 |  2.317829   .0348819   .007059   2.318433   2.250794   2.383784
+        cut9 |  2.964098   .0443996   .009522   2.966297   2.877881   3.044595
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      6,400
+                                                 Acceptance rate  =      .2357
+                                                 Efficiency:  min =    .002327
+                                                              avg =    .003279
+Log marginal-likelihood =  -13489.74                          max =    .005002
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.412472   .0318348   .004769  -1.411658  -1.471882  -1.349083
+        cut2 | -.3886407   .0254466   .003598  -.3888434  -.4416492  -.3441603
+        cut3 |  .3772712   .0266867   .005062   .3779284   .3242691   .4297047
+        cut4 |  .7857303   .0293524   .006084   .7875045   .7290398   .8427225
+        cut5 |  1.125891   .0304154   .006305   1.126486    1.05798   1.180536
+        cut6 |  1.431825   .0324204   .006079   1.432682   1.364964    1.49497
+        cut7 |  1.776363   .0384543   .006458   1.778093   1.701231   1.849069
+        cut8 |  2.116101   .0440864    .00762   2.116622   2.024424   2.198467
+        cut9 |  2.854279   .0544277   .010135   2.853118   2.751605   2.962821
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |         0     0.00000          0
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         
+Testing just with responses from wave 6:
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =     11,800
+                                                 Acceptance rate  =      .1911
+                                                 Efficiency:  min =     .00697
+                                                              avg =    .008108
+Log marginal-likelihood = -27010.991                          max =     .01041
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -2.057652   .0271547   .003022  -2.057954  -2.108287  -2.007607
+        cut2 | -1.086664   .0189569   .002012   -1.08611  -1.122792  -1.049633
+        cut3 | -.6197318   .0173266   .002056   -.619355  -.6508361  -.5832575
+        cut4 | -.2269925   .0185494   .001928  -.2274373  -.2645999  -.1926502
+        cut5 |  .2449187   .0191096   .002212   .2450778   .2060528   .2799388
+        cut6 |  .5641399   .0184996   .002216   .5654126   .5271533   .5974015
+        cut7 |  .9570778   .0191538   .002177   .9573117   .9215766   .9956815
+        cut8 |  1.408301   .0187724   .002231   1.407812    1.37034   1.442723
+        cut9 |   2.12747   .0275073   .002696    2.12772    2.07095   2.175941
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |     .0108     0.10337     .00255
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |     .0563     0.23051   .0184144
+       prob8 |     .9991     0.02999   .0006398
+       prob9 |     .6422     0.47938   .0368099
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      5,900
+                                                 Acceptance rate  =      .1832
+                                                 Efficiency:  min =    .002139
+                                                              avg =    .003608
+Log marginal-likelihood = -13481.944                          max =    .008326
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -2.235393   .0381821   .004184  -2.234546  -2.309814  -2.161544
+        cut2 | -1.371716   .0288961   .004242  -1.370964  -1.431575  -1.320274
+        cut3 | -1.043601   .0257557   .004597  -1.042812  -1.095394   -.998754
+        cut4 | -.5933421   .0229539   .004145   -.591374   -.637066  -.5495119
+        cut5 | -.0427604   .0200324   .003806  -.0411193  -.0827712  -.0056021
+        cut6 |   .258036   .0208856   .004516    .258495   .2160816   .2994414
+        cut7 |  .6432417   .0219453    .00429   .6437042   .6001298   .6831031
+        cut8 |  1.169498   .0243114   .005223   1.171544   1.119713   1.213766
+        cut9 |  2.008808   .0362469   .006037   2.005572   1.945488   2.084843
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |     .8524     0.35472   .0320799
+       prob2 |     .9833     0.12815    .005278
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |     .9538     0.20993   .0238878
+       prob6 |     .0003     0.01732   .0002999
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |     .0039     0.06233   .0025538
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+  
+Burn-in ...
+Simulation ...
+
+Model summary
+------------------------------------------------------------------------------
+Likelihood: 
+  bbin ~ ologit({cut1} {cut2} {cut3} {cut4} {cut5} {cut6} {cut7} {cut8} {cut9} )
+
+Prior: 
+  {cut1 cut2 cut3 cut4 cut5 cut6 cut7 cut8 cut9} ~ 1 (flat)
+------------------------------------------------------------------------------
+
+Bayesian ordered logistic regression             MCMC iterations  =     12,500
+Random-walk Metropolis-Hastings sampling         Burn-in          =      2,500
+                                                 MCMC sample size =     10,000
+                                                 Number of obs    =      5,900
+                                                 Acceptance rate  =      .1856
+                                                 Efficiency:  min =     .00138
+                                                              avg =    .002045
+Log marginal-likelihood = -13277.162                          max =    .002805
+ 
+------------------------------------------------------------------------------
+             |                                                     HPD
+             |      Mean   Std. Dev.     MCSE     Median  [95% Cred. Interval]
+-------------+----------------------------------------------------------------
+        cut1 | -1.941948   .0473831    .01147  -1.945101  -2.032047  -1.848684
+        cut2 | -.8773882   .0324721   .008742  -.8782275  -.9380328  -.8112472
+        cut3 |  -.277031   .0290231   .006398  -.2786453  -.3301141  -.2139995
+        cut4 |   .093099   .0282499   .005334   .0932473   .0399782   .1494614
+        cut5 |  .5104177   .0323443   .006319   .5087067   .4452145   .5696574
+        cut6 |  .8665836   .0343742   .007023   .8658452   .7965142   .9343471
+        cut7 |  1.294272   .0378494    .00863   1.294322   1.221721   1.367187
+        cut8 |  1.646792   .0419876   .010446    1.64539   1.571523   1.723482
+        cut9 |   2.22246   .0501815   .011507   2.221672   2.134432   2.330541
+------------------------------------------------------------------------------
+Note: Default priors are used for model parameters.
+Note: There is a high autocorrelation after 500 lags.
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593
+       prob2 : -1.465393169645517 < {cut2} <
+               -1.307195552594263
+       prob3 : -.9263966689128307 < {cut3} <
+               -.7681990518615767
+       prob4 : -.4845639166337914 < {cut4} <
+               -.3263662995825374
+       prob5 : -.079098808525627 < {cut5} < .07
+               9098808525627
+       prob6 : .3263662995825373 < {cut6} < .48
+               45639166337913
+       prob7 : .7681990518615766 < {cut7} < .92
+               63966689128306
+       prob8 : 1.307195552594263 < {cut8} < 1.4
+               65393169645517
+       prob9 : 2.118125768810592 < {cut9} < 2.2
+               76323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+       prob2 |         0     0.00000          0
+       prob3 |         0     0.00000          0
+       prob4 |         0     0.00000          0
+       prob5 |         0     0.00000          0
+       prob6 |         0     0.00000          0
+       prob7 |         0     0.00000          0
+       prob8 |         0     0.00000          0
+       prob9 |     .8402     0.36644   .0595215
+-----------------------------------------------
+
+Interval tests     MCMC sample size =    10,000
+
+       prob1 : -2.276323385861847 < {cut1} <
+               -2.118125768810593, -1.465393169
+               645517 < {cut2} < -1.30719555259
+               4263, -.9263966689128307 < {cut3
+               } < -.7681990518615767, -.484563
+               9166337914 < {cut4} < -.32636629
+               95825374, -.079098808525627 <
+               {cut5} < .079098808525627, .3263
+               662995825373 < {cut6} < .4845639
+               166337913, .7681990518615766 <
+               {cut7} < .9263966689128306, 1.30
+               7195552594263 < {cut8} < 1.46539
+               3169645517, 2.118125768810592 <
+               {cut9} < 2.276323385861846
+ 
+-----------------------------------------------
+             |      Mean    Std. Dev.      MCSE
+-------------+---------------------------------
+       prob1 |         0     0.00000          0
+-----------------------------------------------
+Posterior probability for ROPE assuming ordered logit DGP:
+Infections
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         0
+Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         0
+Both Infections and Deaths
+       Over all waves: 0
+       Wave 1:         0
+       Wave 2:         0
+       Wave 3:         0
+       Wave 4:         0
+       Wave 5:         0
+       Wave 6:         0
+
+. 
+. * display estimates
+. di "Posterior probability for ROPE assuming ordered logit DGP:"
+Posterior probability for ROPE assuming ordered logit DGP:
+
+. di "Infections"
+Infections
+
+. di "       Over all waves: `p_val_i'"
+       Over all waves: 0
+
+. di "       Wave 1:         `p_val_1_i'"
+       Wave 1:         0
+
+. di "       Wave 2:         `p_val_2_i'"
+       Wave 2:         0
+
+. di "       Wave 3:         `p_val_3_i'"
+       Wave 3:         0
+
+. di "       Wave 4:         `p_val_4_i'"
+       Wave 4:         0
+
+. di "       Wave 5:         `p_val_5_i'"
+       Wave 5:         0
+
+. di "       Wave 6:         `p_val_6_i'"
+       Wave 6:         0
+
+. di "Deaths"
+Deaths
+
+. di "       Over all waves: `p_val_d'"
+       Over all waves: 0
+
+. di "       Wave 1:         `p_val_1_d'"
+       Wave 1:         0
+
+. di "       Wave 2:         `p_val_2_d'"
+       Wave 2:         0
+
+. di "       Wave 3:         `p_val_3_d'"
+       Wave 3:         0
+
+. di "       Wave 4:         `p_val_4_d'"
+       Wave 4:         0
+
+. di "       Wave 5:         `p_val_5_d'"
+       Wave 5:         0
+
+. di "       Wave 6:         `p_val_6_d'"
+       Wave 6:         0
+
+. di "Both Infections and Deaths"
+Both Infections and Deaths
+
+. di "       Over all waves: `p_val_both'"
+       Over all waves: 0
+
+. di "       Wave 1:         `p_val_1_both'"
+       Wave 1:         0
+
+. di "       Wave 2:         `p_val_2_both'"
+       Wave 2:         0
+
+. di "       Wave 3:         `p_val_3_both'"
+       Wave 3:         0
+
+. di "       Wave 4:         `p_val_4_both'"
+       Wave 4:         0
+
+. di "       Wave 5:         `p_val_5_both'"
+       Wave 5:         0
+
+. di "       Wave 6:         `p_val_6_both'"
+       Wave 6:         0
+
+. 
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   4.  Finish up   <] */ 
+. /*----------------------------------------------------*/
+. 
+. log close Analysis
+      name:  Analysis
+       log:  /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Logs/COVID-19 Estimation for Methods paper -- all frames.log
+  log type:  text
+ closed on:  27 Apr 2021, 12:45:06
+----------------------------------------------------------------------------------------------------------------------------------------
+
+. 
+. 
+. /*------------------------------------ End of SECTION 1 ------------------------------------*/
+. 
+end of do-file
+. }
+
+. 
+.  
+. /*----------------------------------------------------*/
+.    /* [>   4.  Check runtime and close log   <] */ 
+. /*----------------------------------------------------*/
+. 
+. * Time taken
+. timer off 1
+
+. timer list
+   1:    252.71 /        1 =     252.7090
+
+. local secs = r(t1)
+
+. local mins = `secs'/60
+
+. local hrs = `mins'/60
+
+. local secs_ = string(`secs', "%10.0f")
+
+. local mins_ = string(`mins', "%4.1f")
+
+. local hrs_ = string(`hrs', "%4.2f")
+
+. di "Calculations took `secs_' seconds, `mins_' minutes, or `hrs_' hours."
+Calculations took 253 seconds, 4.2 minutes, or 0.07 hours.
+
+. 
+. log close main
+      name:  main
+       log:  /Users/andrehofmeyr/Documents/GitRepos/Methods-SI/Evaluation of uniform token allocation for US COVID study 1-month timefra
+> me.log
+  log type:  text
+ closed on:  27 Apr 2021, 12:45:06
+----------------------------------------------------------------------------------------------------------------------------------------
