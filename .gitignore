@@ -1,0 +1,8 @@
+.DS_Store
+*.gph
+*.png
+*.dta
+*.ster
+*.tsv
+/RawData
+/__MACOSX
